@@ -1,3 +1,5 @@
+devtools::load_all()
+
 feid_spatial <- rgdal::readOGR("./data-raw/FEIDs", "FEID_points")
 feid_df <- data.frame(feid=feid_spatial$FEID, x=feid_spatial$X, y=feid_spatial$Y)
 
@@ -13,4 +15,8 @@ slai_df <- dplyr::select(slai_df, -y1985, -y1986, -y1987)
 maricunga_df <- dplyr::inner_join(feid_df, slai_df, by="feid")
 maricunga_df <- maricunga_df[c(2, 3, 1, 4:ncol(maricunga_df))]
 
-save(maricunga_df, vega_df, file="./data/maricunga_slai.RData")
+maricunga_melt <- melt(maricunga_df, id.vars=c("x", "y", "feid", "area.id"))
+colnames(maricunga_melt)[5:6] <- c("year", "slai")
+maricunga_melt$year <- as.numeric(substring(maricunga_melt$year, 2))
+
+save(maricunga_df, maricunga_melt, vega_df, file="./data/maricunga_veg.RData")

@@ -2,8 +2,7 @@
 % Please edit documentation in R/data_functions.r
 \name{isolate_area}
 \alias{isolate_area}
-\title{Strip a raster down to only those points contained within a Seeps and
- Springs zone.}
+\title{Strip a raster down to pre-defined zone.}
 \usage{
 isolate_area(zonelayer = NULL, valuelayer = NULL)
 }

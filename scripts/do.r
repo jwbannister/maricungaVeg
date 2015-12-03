@@ -1,10 +1,6 @@
-load("../data/maricunga_slai.RData")
+load("./data/maricunga_slai.RData")
 
-ggplot(data.frame(x=history), aes(x=x)) +
-  stat_ecdf(color="red") +
-  geom_path(data=data.frame(x=kernel_ecdf$x, y=kernel_ecdf$Fhat), mapping=aes(x=x, y=y))
-
-maricunga_quantiles <- build_xval_quantile_df(data=maricunga_df, column_index=5:32)
+maricunga_quantiles <- score_quantile(data=maricunga_df, column_index=5:32)
 
 save(maricunga_quantiles, file="../data/maricunga_quantiles.RData")
 

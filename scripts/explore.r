@@ -1,11 +1,72 @@
-load("../data/maricunga_slai.RData")
-load("../data/maricunga_quantiles.RData")
+load("./data/maricunga_slai.RData")
+devtools::load_all()
 library(dplyr)
 library(ggplot2)
 library(reshape2)
 library(gridExtra)
+library(RColorBrewer)
+palit <- brewer.pal(6, "Set1")
 
-# write.csv(maricunga_quantiles, file="../output/maricunga_quantiles.csv")
+maricunga_melt <- melt(maricunga_df, id.vars=c("x", "y", "feid", "area.id"))
+colnames(maricunga_melt)[5:6] <- c("year", "slai")
+maricunga_melt$year <- as.numeric(substring(maricunga_melt$year, 2))
+
+slai_sums <- expand.grid(unique(maricunga_melt$area.id), unique(maricunga_melt$year),
+                         stringsAsFactors=FALSE )
+slai_sums <- slai_sums[complete.cases(slai_sums), ]
+colnames(slai_sums) <- c("area.id", "year")
+
+pb <- txtProgressBar(min=0, max=nrow(slai_sums), style=3, width=80)
+for (i in 1:nrow(slai_sums)){
+  slai_sums$sum.slai[i] <- sum(filter(maricunga_melt, year==slai_sums$year[i],
+                                      area.id==slai_sums$area.id[i])$slai)
+  setTxtProgressBar(pb, i)
+}
+close(pb)
+
+area.index <- 2
+slai_sums %>% filter(area.id==unique(slai_sums$area.id)[area.index]) %>%
+ggplot(aes(x=year, y=sum.slai)) +
+  geom_bar(stat="identity", fill=palit[1], color="#000000") +
+  ggtitle(unique(slai_sums$area.id)[area.index])
+
+p1 <- ggplot(slai_sums, aes(x=year, y=sum.slai)) +
+  geom_bar(stat="identity", fill=palit[1], color="#000000") +
+  facet_grid(area.id ~ ., scales="free_y")
+makePNG(p1, "./output/slai_sums.png", wt=10, ht=16)
+
+# based on observations of sum of pixel seasonal LAIs across areas, severe
+# decline in Pantanillo, Pantanillo Ancho 1 and Pantanillo Ancho 2 began in
+# 2000. So, build estimated CDF for each area on data from 1988 - 2000.
+
+# yearly SLAI for a pixel
+pix <- 2064
+maricunga_melt %>% filter(feid==pix) %>%
+  ggplot(aes(x=year, y=slai)) +
+  geom_bar(stat="identity", fill=palit[1], color="#000000") +
+  ggtitle(paste0("Pixel FEID ", as.character(pix)))
+
+# by-pixel example plot of how kernel ECDF compares to non-par historical data
+pix <- 2064
+ggplot() +
+  geom_path(data=build_ecdf(maricunga_melt, pixel=pix, startyear=1988, endyear=2000, kern="normal"),
+            mapping=aes(x=x, y=Fhat), color=palit[1]) +
+  geom_path(data=build_ecdf(maricunga_melt, pixel=pix, startyear=1988, endyear=2000, kern="epanechnikov"),
+            mapping=aes(x=x, y=Fhat), color=palit[2]) +
+  stat_ecdf(data=filter(maricunga_melt, feid==pix, year %in% c(1988:2000)),
+            mapping=aes(x=slai), color="#000000")
+
+
+
+
+
+
+
+
+
+
+
+
 
 melt(maricunga_df[!is.na(maricunga_df$area.id), 5:32]) %>%
 ggplot(aes(x=value)) +

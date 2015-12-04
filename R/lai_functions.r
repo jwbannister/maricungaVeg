@@ -88,3 +88,30 @@ score_high_streak <- function(data, threshold){
   close(pb)
   df
 }
+
+score_consec_decrease <- function(data){
+  pb <- txtProgressBar(min=0, max=length(unique(data$feid)), style=3, width=80)
+  tick <- 1
+  df <- dplyr::filter(data, feid==0)
+  for (i in unique(data$feid)){
+    temp <- dplyr::filter(data, feid==i)
+    temp <- temp[sort.int(temp$year, index.return=TRUE)$ix, ]
+    temp$decrease.score[1] <- NA
+    for (j in 2:nrow(temp)){
+      n <- 0
+      for (k in j:2){
+        if (temp$slai[k] < temp$slai[k-1]){
+          n <- n + 1
+        } else {
+          break
+        }
+      }
+      temp$decrease.score[j] <- min(n, 5)
+    }
+    df <- rbind(df, temp)
+    setTxtProgressBar(pb, tick)
+    tick <- tick + 1
+  }
+  close(pb)
+  df
+}
